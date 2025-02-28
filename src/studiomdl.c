@@ -31,6 +31,15 @@ void clip_rotations( vec3_t rot );
 #define strcpyn( a, b ) strncpy( a, b, sizeof( a ) )
 
 int k_memtotal;
+int numbones = 0;
+int numrenamedbones = 0;
+int numhitgroups = 0;
+int numhitboxes = 0;
+s_bonecontroller_t bonecontroller[MAXSTUDIOSRCBONES];
+int numbonecontrollers = 0;
+s_attachment_t attachment[MAXSTUDIOSRCBONES];
+int numattachments = 0;
+
 void *kalloc( int num, int size )
 {
 	// printf( "calloc( %d, %d )\n", num, size );
@@ -3138,12 +3147,22 @@ int main (int argc, char **argv)
 
 	strcpy( sequencegroup[numseqgroups].label, "default" );
 	numseqgroups = 1;
-// load the script
+
+	// load the script
 	strcpy (path, argv[i]);
 	DefaultExtension (path, ".qc");
-	// SetQdirFromPath (path);
+	
+	// 获取 QC 文件所在目录作为工作目录
+	char qc_dir[1024];
+	strcpy(qc_dir, path);
+	StripFilename(qc_dir);
+	if (qc_dir[0] == '\0') {
+		Q_getwd(qc_dir);
+	}
+	SetQdirFromPath(qc_dir);
+	
 	LoadScriptFile (path);
-// parse it
+	// parse it
 	ClearModel ();
 	strcpy (outname, argv[i]);
 	ParseScript ();

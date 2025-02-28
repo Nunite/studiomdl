@@ -1,0 +1,132 @@
+From 59f766797b4b0d14d7d5a8bd27fec90b6c635ed3 Mon Sep 17 00:00:00 2001
+From: Elim Garak <garak92@protonmail.com>
+Date: Sun, 11 Feb 2024 23:20:45 -0300
+Subject: [PATCH] Fixed compile errors caused by: * Use of deprecated and
+ unsafe getwd function * Multiple definitions of variables * Use of memmove
+ without including string.h
+
+---
+ src/bmpread.c   |  1 +
+ src/cmdlib.c    |  3 ++-
+ src/studiomdl.c |  9 +++++++++
+ src/studiomdl.h | 16 ++++++++--------
+ 4 files changed, 20 insertions(+), 9 deletions(-)
+
+diff --git a/src/bmpread.c b/src/bmpread.c
+index 3b237a1..7a32027 100644
+--- a/src/bmpread.c
++++ b/src/bmpread.c
+@@ -6,6 +6,7 @@
+ #if !defined( _WIN32 )
+ #include <stdio.h>
+ #include <stdlib.h>
++#include <string.h>
+ 
+ typedef int LONG;
+ typedef unsigned long ULONG;
+diff --git a/src/cmdlib.c b/src/cmdlib.c
+index b01ba07..13d8451 100644
+--- a/src/cmdlib.c
++++ b/src/cmdlib.c
+@@ -1,6 +1,7 @@
+ #include "cmdlib.h"
+ #include <sys/types.h>
+ #include <sys/stat.h>
++#include <unistd.h>
+ 
+ #ifdef WIN32
+ #include <direct.h>
+@@ -233,7 +234,7 @@ void Q_getwd (char *out)
+    _getcwd (out, 256);
+    strcat (out, "\\");
+ #else
+-   getwd (out);
++   getcwd (out, 256);
+ #endif
+ }
+ 
+diff --git a/src/studiomdl.c b/src/studiomdl.c
+index 8d638cc..c4cdd8e 100644
+--- a/src/studiomdl.c
++++ b/src/studiomdl.c
+@@ -31,6 +31,15 @@ void clip_rotations( vec3_t rot );
+ #define strcpyn( a, b ) strncpy( a, b, sizeof( a ) )
+ 
+ int k_memtotal;
++int numbones = 0;
++int numrenamedbones = 0;
++int numhitgroups = 0;
++int numhitboxes = 0;
++s_bonecontroller_t bonecontroller[MAXSTUDIOSRCBONES];
++int numbonecontrollers = 0;
++s_attachment_t attachment[MAXSTUDIOSRCBONES];
++int numattachments = 0;
++
+ void *kalloc( int num, int size )
+ {
+ 	// printf( "calloc( %d, %d )\n", num, size );
+diff --git a/src/studiomdl.h b/src/studiomdl.h
+index e18bdec..0a14e75 100644
+--- a/src/studiomdl.h
++++ b/src/studiomdl.h
+@@ -75,7 +75,7 @@ typedef struct
+ } s_bonefixup_t;
+ EXTERN	s_bonefixup_t bonefixup[MAXSTUDIOSRCBONES];
+ 
+-int numbones;
++extern int numbones;
+ typedef struct
+ {
+ 	char			name[32];	// bone name for symbolic links
+@@ -92,7 +92,7 @@ typedef struct
+ } s_bonetable_t;
+ EXTERN	s_bonetable_t bonetable[MAXSTUDIOSRCBONES];
+ 
+-int numrenamedbones;
++extern int numrenamedbones;
+ typedef struct
+ {
+ 	char			from[32];
+@@ -100,7 +100,7 @@ typedef struct
+ } s_renamebone_t;
+ EXTERN s_renamebone_t renamedbone[MAXSTUDIOSRCBONES];
+ 
+-int numhitboxes;
++extern int numhitboxes;
+ typedef struct
+ {
+ 	char			name[32];	// bone name
+@@ -111,7 +111,7 @@ typedef struct
+ } s_bbox_t;
+ EXTERN s_bbox_t hitbox[MAXSTUDIOSRCBONES];
+ 
+-int numhitgroups;
++extern int numhitgroups;
+ typedef struct
+ {
+ 	int				models;
+@@ -131,8 +131,8 @@ typedef struct
+ 	float	end;
+ } s_bonecontroller_t;
+ 
+-s_bonecontroller_t bonecontroller[MAXSTUDIOSRCBONES];
+-int numbonecontrollers;
++extern s_bonecontroller_t bonecontroller[MAXSTUDIOSRCBONES];
++extern int numbonecontrollers;
+ 
+ typedef struct
+ {
+@@ -144,8 +144,8 @@ typedef struct
+ 	vec3_t	org;
+ } s_attachment_t;
+ 
+-s_attachment_t attachment[MAXSTUDIOSRCBONES];
+-int numattachments;
++extern s_attachment_t attachment[MAXSTUDIOSRCBONES];
++extern int numattachments;
+ 
+ typedef struct
+ {
+-- 
+2.43.0
+

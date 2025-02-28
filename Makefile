@@ -33,10 +33,8 @@ else
 endif
 
 CC=gcc
-
-ARCH?=-m32
-USER_FLAGS=
-CFLAGS=-Wint-to-pointer-cast $(USER_FLAGS)
+CFLAGS=-Wall -I./src
+LDFLAGS=
 
 # Link math library on Linux
 ifeq ($(OS),Linux)
@@ -69,46 +67,48 @@ INSTALL_PATH?=/usr/local/bin
 BUILD_DIR=build$(PATHSEP)build-$(ARCHPATH)
 BIN_DIR=build$(PATHSEP)bin-$(ARCHPATH)
 
-STUDIOMDL_SOURCES=bmpread.c cmdlib.c mathlib.c scriplib.c studiomdl.c trilib.c tristrip.c write.c
-STUDIOMDL_OBJECTS=$(patsubst %.c,$(BUILD_DIR)/%.o,$(STUDIOMDL_SOURCES))
-STUDIOMDL_DEFINES=-DSTUDIOMDL
+SRCS = src/bmpread.c \
+       src/cmdlib.c \
+       src/mathlib.c \
+       src/scriplib.c \
+       src/studiomdl.c \
+       src/trilib.c \
+       src/tristrip.c \
+       src/write.c
 
-TARGETS?=studiomdl
+OBJS = $(SRCS:.c=.o)
+TARGET = studiomdl
 
-OPTS=$(ARCH) $(CFLAGS) $(PLATFORM_FLAGS)
+all : $(TARGET)
 
-STUDIOMDLDIRS=$(BUILD_DIR)$(PATHSEP)common
-
-all : $(TARGETS)
-
-$(STUDIOMDLDIRS):
+$(BUILD_DIR):
 	-$(MKDIR) $@
 $(BIN_DIR):
 	-$(MKDIR) -p $@
 
-studiomdl: $(BIN_DIR) $(STUDIOMDLDIRS) $(BIN_DIR)/studiomdl$(EXE)
+$(TARGET): $(OBJS)
+	$(CC) $(OBJS) -o $(TARGET) $(LDFLAGS)
 
 checkstudiomdl: studiomdl.log
 
-studiomdl.log: $(COMMON_SOURCES) $(addprefix studiomdl$(PATHSEP), $(STUDIOMDL_SOURCES))
+studiomdl.log: $(COMMON_SOURCES) $(addprefix studiomdl$(PATHSEP), $(SRCS))
 	$(CPPCHECK) $(COMMON_DEFINES) $(STUDIOMDL_DEFINES) $(CPPCHECKFLAGS) studiomdl 2>$@
 
-$(BIN_DIR)/studiomdl$(EXE): $(STUDIOMDL_OBJECTS)
-	$(CC) $(OPTS) $(STUDIOMDL_OBJECTS) $(STUDIOMDL_COMMON_OBJECTS) -o $@
-
 $(BUILD_DIR)/%.o : src/%.c
-	$(CC) -c $(OPTS) $(COMMON_DEFINES) $(STUDIOMDL_DEFINES) $(INCLUDE_DIRS) $< -o $@
+	$(CC) -c $(CFLAGS) $(COMMON_DEFINES) $(STUDIOMDL_DEFINES) $(INCLUDE_DIRS) $< -o $@
 
 clean:
-	-$(RMR) $(foreach target,$(TARGETS),$(BUILD_DIR)$(PATHSEP)$(target) )
+	-$(RMR) $(foreach target,$(TARGET),$(BUILD_DIR)$(PATHSEP)$(target) )
 
 distclean: clean
-	-$(RMR) $(foreach target,$(TARGETS),$(BIN_DIR)$(PATHSEP)$(target)$(EXE))
+	-$(RMR) $(foreach target,$(TARGET),$(BIN_DIR)$(PATHSEP)$(target)$(EXE))
 
 install:
-	-$(CP) $(BIN_DIR)$(PATHSEP)studiomdl$(EXE) $(INSTALL_PATH)$(PATHSEP)studiomdl
+	-$(CP) $(BIN_DIR)$(PATHSEP)$(TARGET)$(EXE) $(INSTALL_PATH)$(PATHSEP)$(TARGET)
 
 uninstall:
-	-$(RM) $(INSTALL_PATH)$(PATHSEP)studiomdl
+	-$(RM) $(INSTALL_PATH)$(PATHSEP)$(TARGET)
 
 check: checkstudiomdl
+
+.PHONY: clean

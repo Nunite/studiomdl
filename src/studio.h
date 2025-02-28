@@ -16,9 +16,10 @@
 #ifndef _STUDIO_H_
 #define _STUDIO_H_
 
-#if !defined( _WIN32 )
 #include <stdint.h>
-#endif
+
+// 添加 int32 类型定义
+typedef int32_t int32;
 
 /*
 ==============================================================================

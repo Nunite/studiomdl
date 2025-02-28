@@ -1,6 +1,7 @@
 #include "cmdlib.h"
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #ifdef WIN32
 #include <direct.h>
@@ -63,87 +64,15 @@ char		gamedir[1024]={'\0'};
 void SetQdirFromPath (char *path)
 {
 #ifndef OLD_BOGUS_PATH_CODE
-
-	if ( qproject[0]=='\0' )
-		{
-		if ( getenv("QPROJECT") )
-		{
-			char c = qproject[ strlen(qproject)-1 ];
-			strcpy( qproject, getenv("QPROJECT") );
-			if ( !PATHSEPARATOR( c ) )
-				strcat( qproject, "\\" );
-		}
-		else
-			strcpy( qproject, "quiver\\" );
-		}
-	if ( qproject[0] != '\\' && qproject[0] != '/' && qproject[1] != ':' )
-		{
-		strcpy( qdir, "\\" );
-		}
-
-	strcat( qdir, qproject );
-	strcpy( gamedir, qdir );
-	strcat( gamedir, "\\valve\\" );
-
-#else
-	char	temp[1024];
-	char	*c;
-
-	if (!(path[0] == '/' || path[0] == '\\' || path[1] == ':'))
-	{	// path is partial
-		Q_getwd (temp);
-		strcat (temp, path);
-		path = temp;
-	}
-
-// search for "quake" or quiver in path
-	if( !qproject[0] ) {
-		char *pszProj;
-
-		pszProj = getenv("QPROJECT");
-
-		if (pszProj != NULL)
-			strcpy(qproject, pszProj);
-		else
-			strcpy(qproject, "quiver");
-	}
-
-try_again:
-
-	for (c=path ; *c ; c++)
-	{
-		int iSize = 0;
-
-		if (!Q_strncasecmp( c, qproject, strlen( qproject ) ) )
-			iSize = strlen( qproject ) + 1;
-
-		if (iSize > 0) 
-		{
-			strncpy (qdir, path, c + iSize - path);
-			printf ("qdir: %s\n", qdir);
-			c += iSize;
-			while (*c)
-			{
-				if (*c == '/' || *c == '\\')
-				{
-					strncpy (gamedir, path, c+1-path);
-					printf ("gamedir: %s\n", gamedir);
-					return;
-				}
-				c++;
-			}
-			Error ("No gamedir in %s", path);
-			return;
-		}
-	}
-
-	if (!strcmp(qproject, "quiver"))
-	{
-		strcpy(qproject, "prospero");
-		goto try_again;
-	}
-
-	Error ("SetQdirFromPath: no '%s' in %s", qproject, path);
+    char current_dir[1024];
+    Q_getwd(current_dir);
+    strcpy(qproject, current_dir);
+    if (!PATHSEPARATOR(qproject[strlen(qproject)-1]))
+        strcat(qproject, "\\");
+    
+    strcpy(qdir, qproject);
+    strcpy(gamedir, qdir);
+    strcat(gamedir, "\\valve\\");
 #endif
 }
 
@@ -165,7 +94,7 @@ char *ExpandPath (char *path)
 {
 	char *psz;
 	static char full[1024];
-	if (!qdir)
+	if (qdir[0] == '\0')
 		Error ("ExpandPath called without qdir set");
 	if (path[0] == '/' || path[0] == '\\' || path[1] == ':')
 		return path;
@@ -233,7 +162,7 @@ void Q_getwd (char *out)
    _getcwd (out, 256);
    strcat (out, "\\");
 #else
-   getwd (out);
+   getcwd (out, 256);
 #endif
 }
 
@@ -409,7 +338,7 @@ int CheckParm (char *check)
 	return 0;
 }
 
-int filelength (FILE *f)
+int filelength_fp (FILE *f)
 {
 	int		pos;
 	int		end;
@@ -461,11 +390,11 @@ void SafeWrite (FILE *f, void *buffer, int count)
 int    LoadFile (char *filename, void **bufferptr)
 {
 	FILE	*f;
-	int    length;
+	int     length;
 	void    *buffer;
 
 	f = SafeOpenRead (filename);
-	length = filelength (f);
+	length = filelength_fp (f);
 	buffer = malloc (length+1);
 	((char *)buffer)[length] = 0;
 	SafeRead (f, buffer, length);
